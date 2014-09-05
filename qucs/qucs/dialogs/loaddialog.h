@@ -68,6 +68,7 @@ private slots:
     void slotSelectAll();
     void slotSelectNone();
     void slotSymbolFileClicked(QListWidgetItem *item);
+    void slotIncludeModel();
 
 protected slots:
     void reject();
@@ -89,6 +90,7 @@ private:
     QPushButton *ButtOk, *ButtCancel,
                 *ButtSelectAll, *ButtSelectNone,
                 *ButtChangeIcon;
+    QPushButton *ButtInclude;
 };
 
 #endif // LOADDIALOG_H

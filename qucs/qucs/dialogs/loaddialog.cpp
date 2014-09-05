@@ -37,6 +37,7 @@
 #include "qucs.h"
 #include "qucsdoc.h"
 #include "components/components.h"
+#include "components/vacomponent.h" // getData, JSON
 
 LoadDialog::LoadDialog( QWidget* parent, const char* name, bool modal, Qt::WFlags fl )
    : QDialog( parent, name, modal, fl )
@@ -103,6 +104,7 @@ void LoadDialog::initDialog()
 
 
    QVBoxLayout *iconLayout = new QVBoxLayout();
+   hGroups->addLayout(iconLayout);
 
    QGroupBox *group2 = new QGroupBox( );
 
@@ -119,8 +121,12 @@ void LoadDialog::initDialog()
 
    ButtChangeIcon = new QPushButton(tr("Change Icon"));
    iconLayout->addWidget(ButtChangeIcon);
-   hGroups->addLayout(iconLayout);
    connect(ButtChangeIcon,SIGNAL(clicked()),this,SLOT(slotChangeIcon()));
+
+   ButtInclude = new QPushButton(tr("Include Model"));
+   ButtInclude->setToolTip(tr("Include SPICE .model parameters"));
+   iconLayout->addWidget(ButtInclude);
+   connect(ButtInclude,SIGNAL(clicked()),this,SLOT(slotIncludeModel()));
 
    // group checkboxes
    QGroupBox *group3 = new QGroupBox();
@@ -218,7 +224,142 @@ void LoadDialog::slotSymbolFileClicked(QListWidgetItem* item)
                  tr("Icon not found:\n %1.png").arg(vaBitmap));
     // default icon
     iconPixmap->setPixmap(QPixmap(":/bitmaps/editdelete.png"));
+    }
+}
+
+/*!
+ * \brief LoadDialog::slotIncludeModel Load a include file with model parameters.
+ * It overrides the default parameters
+ *
+ *  \todo find way to enable/disable include?
+ */
+void LoadDialog::slotIncludeModel()
+{
+  qDebug() << "Include what?";
+
+  //
+  QString includeName =
+          QFileDialog::getOpenFileName(this,
+                                        tr("Open File"),
+                                        QString(projDir.absolutePath()),
+                                        tr("Include model (*.*)"));
+
+  QString newInclude =  QFileInfo(includeName).baseName();
+
+  qDebug() << newInclude;
+
+  // load file, read line by line
+  // parse +
+  // split =
+  // trim
+  // store key, value
+
+  // store the Key, Value  for the include model file
+  QHash<QString, QString> includeParam;
+
+  QFile file(includeName);
+//  QByteArray ba;
+//  ba.clear();
+  if (!file.open(QIODevice::ReadWrite | QIODevice::Text)){
+    QMessageBox::critical(this, tr("Error"),
+                          tr("File not found: %1").arg(includeName));
   }
+  else {
+    QTextStream in(&file);
+    while ( !in.atEnd() )
+    {
+      QString line = in.readLine();
+
+      /// \todo read model name, check consistency
+      if (line.contains(".model")) {
+          qDebug() << line;
+
+      }
+
+      // read parameters
+      // save where? direct override?
+      /*
+      at this point "_symbol.json" is already created. it was created during symbol save.
+
+      need to laod it again, check for override, do override and save ??? where?
+
+
+      */
+
+      if (line.contains("+")) {
+
+        QStringList KeyVal = line.section("+",1).split("=");
+
+        QString Key = KeyVal[0].stripWhiteSpace();
+        QString Val = KeyVal[1].stripWhiteSpace();
+
+       // qDebug() << Key << Val;
+        includeParam[Key] = Val;
+
+        /// add to hash table
+      }
+
+    }
+    qDebug() << "card" <<includeParam.keys().size();
+  }
+  file.close();
+
+  ///=====================================================
+  /// load default properties
+  ///
+  QString data = getData("/Users/guitorri/qucs_qt3/bsim6_prj/bsim6MOD_symbol.json");
+
+  /// \todo check if JSON is error free
+  /// \todo Need to destroy engine?
+  QScriptEngine engine;
+  QScriptValue vadata = engine.evaluate("(" + data + ")");
+
+  // check model name??
+  QString Description = getString(vadata, "description");
+  qDebug() << Description;
+
+  QScriptValue entries = vadata.property("property");
+
+  QScriptValueIterator it(entries);
+
+  // store the Key, Value  for the include model file
+  QHash<QString, QString> defaultParam;
+
+  while (it.hasNext()) {
+    it.next();
+
+    QScriptValue entry = it.value();
+
+    // skip length named iterate
+    if (it.name().compare("length")) {
+      QString name = getString(entry, "name");
+      QString value = getString(entry, "value");
+
+//      qDebug() << "default" <<name << value;
+
+      // add to default hash
+      defaultParam[name]=value;
+
+    }
+  }
+  qDebug() << "default" << defaultParam.keys().size();
+
+
+  /// got includeParam / defaultParam
+  /// override >>
+  QList<QString> Keys = includeParam.keys();
+  foreach(QString Key, Keys) {
+
+//      if (defaultParam.keys().contains(Key)) {
+
+          if ( abs (includeParam[Key].toDouble() - defaultParam[Key].toDouble()) > 0.01)
+            qDebug() << "mismatch" << Key << includeParam[Key] << defaultParam[Key];
+
+//        }
+
+    }
+
+
 }
 
 void LoadDialog::reject()
