@@ -38,6 +38,7 @@
 #include "qucsdoc.h"
 #include "components/components.h"
 #include "components/vacomponent.h" // getData, JSON
+#include "main.h" // QucsSettings
 
 LoadDialog::LoadDialog( QWidget* parent, const char* name, bool modal, Qt::WFlags fl )
    : QDialog( parent, name, modal, fl )
@@ -237,6 +238,13 @@ void LoadDialog::slotIncludeModel()
 {
   qDebug() << "Include what?";
 
+  // current JSON symbol file
+  QListWidgetItem *item = fileView->selectedItems()[0];
+  QString symbolJSON = item->text();
+  symbolJSON = QucsSettings.QucsWorkDir.filePath(symbolJSON);
+  qDebug() << "overriding" << symbolJSON;
+
+
   //
   QString includeName =
           QFileDialog::getOpenFileName(this,
@@ -307,7 +315,9 @@ void LoadDialog::slotIncludeModel()
   ///=====================================================
   /// load default properties
   ///
-  QString data = getData("/Users/guitorri/qucs_qt3/bsim6_prj/bsim6MOD_symbol.json");
+//  QString data = getData("/Users/guitorri/qucs_qt3/bsim6_prj/bsim6MOD_symbol.json");
+  QString data = getData(symbolJSON);
+
 
   /// \todo check if JSON is error free
   /// \todo Need to destroy engine?
@@ -318,9 +328,11 @@ void LoadDialog::slotIncludeModel()
   QString Description = getString(vadata, "description");
   qDebug() << Description;
 
-  QScriptValue entries = vadata.property("property");
+  // grab properties
+  QScriptValue jsonProps = vadata.property("property");
 
-  QScriptValueIterator it(entries);
+  // iterator
+  QScriptValueIterator it(jsonProps);
 
   // store the Key, Value  for the include model file
   QHash<QString, QString> defaultParam;
@@ -335,30 +347,71 @@ void LoadDialog::slotIncludeModel()
       QString name = getString(entry, "name");
       QString value = getString(entry, "value");
 
-//      qDebug() << "default" <<name << value;
-
       // add to default hash
       defaultParam[name]=value;
 
+      /// can overide here here already...
+      /// QScriptEngine does not have serialization... find workaroud..
+      // do includision?
     }
   }
-  qDebug() << "default" << defaultParam.keys().size();
+
+  // try to save vadata....
+  /*! the issue: QStriptengine does not stream out...
+  need to write a serializer.... argh!*/
+
+  // load original into QString,
+  // search replace,
+  // save modified
+
+//  QFile f1 ("/Users/guitorri/qucs_qt3/bsim6_prj/bsim6MOD_symbol.json");
+  QFile f1 (symbolJSON);
+  f1.open(QIODevice::ReadOnly | QIODevice::Text);
+  QString dat1 = QString(f1.readAll());
+  f1.close();
 
 
   /// got includeParam / defaultParam
   /// override >>
+
+  QString defin;
+  QString inclu;
   QList<QString> Keys = includeParam.keys();
   foreach(QString Key, Keys) {
 
-//      if (defaultParam.keys().contains(Key)) {
+      // model has parameters we want to replace?
+      if (defaultParam.keys().contains(Key)) {
 
-          if ( abs (includeParam[Key].toDouble() - defaultParam[Key].toDouble()) > 0.01)
-            qDebug() << "mismatch" << Key << includeParam[Key] << defaultParam[Key];
+          // is the value different?
+//          if ( abs (includeParam[Key].toDouble() - defaultParam[Key].toDouble()) > 1e-12 ) {
+          if ( includeParam[Key].toDouble() != defaultParam[Key].toDouble() ) {
 
-//        }
+            defin = QString("\"name\" : \"%1\", \"value\" : \"%2\"").arg(Key).arg(defaultParam[Key]);
+            inclu = QString("\"name\" : \"%1\", \"value\" : \"%2\"").arg(Key).arg(includeParam[Key]);
 
+            qDebug() << " mismatch ==>" << Key
+                     << "\n defin" << defaultParam[Key] << defin
+                     << "\n inclu" << includeParam[Key] << inclu;
+
+            if (dat1.find(defin)) {
+                qDebug() << "foun - >replace";
+                // to replacemnt
+                dat1.replace(dat1.indexOf(defin), defin.size(), inclu);
+            }
+            /// \todo error if not found...
+
+        }
     }
+  } // for
 
+
+  /// stream data to json
+//  QString data2 = "/Users/guitorri/qucs_qt3/bsim6_prj/bsim6MOD_symbol.json";
+  QFile f3(symbolJSON);
+  f3.open(QIODevice::WriteOnly | QIODevice::Text);
+  QTextStream out(&f3);
+  out << dat1;
+  f3.close();
 
 }
 
