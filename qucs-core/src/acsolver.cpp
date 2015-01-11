@@ -120,8 +120,7 @@ int acsolver::solve (void) {
 /* Goes through the list of circuit objects and runs its calcAC()
    function. */
 void acsolver::calc (acsolver * self) {
-  circuit * root = self->getNet()->getRoot ();
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (circuit * c : self->getNet()->root) {
     c->calcAC (self->freq);
     if (self->noise) c->calcNoiseAC (self->freq);
   }
@@ -130,8 +129,7 @@ void acsolver::calc (acsolver * self) {
 /* Goes through the list of circuit objects and runs its initAC()
    function. */
 void acsolver::init (void) {
-  circuit * root = subnet->getRoot ();
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (circuit * c : subnet->root) {
     if (c->isNonLinear ()) c->calcOperatingPoints ();
     c->initAC ();
     if (noise) c->initNoiseAC ();
@@ -167,8 +165,7 @@ void acsolver::saveNoiseResults (qucs::vector * f) {
   }
 
   // apply probe data
-  circuit * root = subnet->getRoot ();
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (circuit * c : subnet->root) {
     if (!c->isProbe ()) continue;
     int np, nn;
     nr_double_t vp, vn;

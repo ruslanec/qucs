@@ -172,8 +172,7 @@ int dcsolver::solve (void) {
 /* Goes through the list of circuit objects and runs its calcDC()
    function. */
 void dcsolver::calc (dcsolver * self) {
-  circuit * root = self->getNet()->getRoot ();
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (circuit * c : self->getNet()->root) {
     c->calcDC ();
   }
 }
@@ -181,8 +180,7 @@ void dcsolver::calc (dcsolver * self) {
 /* Goes through the list of circuit objects and runs its initDC()
    function. */
 void dcsolver::init (void) {
-  circuit * root = subnet->getRoot ();
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (circuit * c : subnet->root) {
     c->initDC ();
   }
 }
@@ -190,17 +188,15 @@ void dcsolver::init (void) {
 /* Goes through the list of non-linear circuit objects and runs its
    restartDC() function. */
 void dcsolver::restart (void) {
-  circuit * root = subnet->getRoot ();
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (circuit * c : subnet->root) {
     if (c->isNonLinear ()) c->restartDC ();
   }
 }
 
 /* Goes through the list of non-linear circuit objects and runs its
    saveOperatingPoints() function. */
-void dcsolver::saveOperatingPoints (void) {
-  circuit * root = subnet->getRoot ();
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  void dcsolver::saveOperatingPoints (void) {
+  for (circuit * c : subnet->root) {
     if (c->isNonLinear ()) c->saveOperatingPoints ();
   }
 }

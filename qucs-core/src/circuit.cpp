@@ -53,7 +53,6 @@ const nr_double_t circuit::z0 = 50.0;
 
 // Constructor creates an unnamed instance of the circuit class.
 circuit::circuit () : object (), integrator () {
-  next = prev = NULL;
   size = 0;
   MatrixN = MatrixS = MatrixY = NULL;
   MatrixB = MatrixC = MatrixD = NULL;
@@ -80,7 +79,6 @@ circuit::circuit () : object (), integrator () {
 /* Constructor creates an unnamed instance of the circuit class with a
    certain number of ports. */
 circuit::circuit (int s) : object (), integrator () {
-  next = prev = NULL;
   assert (s >= 0);
   size = s;
   if (size > 0) nodes = new node[s];
@@ -108,8 +106,6 @@ circuit::circuit (int s) : object (), integrator () {
 /* The copy constructor creates a new instance based on the given
    circuit object. */
 circuit::circuit (const circuit & c) : object (c), integrator (c) {
-  next = c.next;
-  prev = c.prev;
   size = c.size;
   pol = c.pol;
   pacport = c.pacport;

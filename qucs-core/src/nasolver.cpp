@@ -954,8 +954,7 @@ int nasolver<nr_type_t>::countVoltageSources (void)
 template <class nr_type_t>
 circuit * nasolver<nr_type_t>::findVoltageSource (int n)
 {
-    circuit * root = subnet->getRoot ();
-    for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+    for (auto * c: subnet->root)
     {
         if (n >= c->getVoltageSource () &&
                 n <= c->getVoltageSource () + c->getVoltageSources () - 1)
@@ -970,9 +969,8 @@ circuit * nasolver<nr_type_t>::findVoltageSource (int n)
 template <class nr_type_t>
 void nasolver<nr_type_t>::assignVoltageSources (void)
 {
-    circuit * root = subnet->getRoot ();
     int nSources = 0;
-    for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+    for (auto * c : subnet->root)
     {
         if (c->getVoltageSources () > 0)
         {
@@ -1198,8 +1196,7 @@ void nasolver<nr_type_t>::restorePreviousIteration (void)
 template <class nr_type_t>
 void nasolver<nr_type_t>::restartNR (void)
 {
-    circuit * root = subnet->getRoot ();
-    for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+    for (circuit * c : subnet->root)
     {
         if (c->isNonLinear ()) c->restartDC ();
     }
@@ -1349,8 +1346,7 @@ void nasolver<nr_type_t>::saveResults (const std::string &volts, const std::stri
     // add voltage probe data
     if (!volts.empty())
     {
-        circuit * root = subnet->getRoot ();
-        for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+      for (circuit * c : subnet->root)
         {
             if (!c->isProbe ()) continue;
             if (!c->getSubcircuit().empty() && !(saveOPs & SAVE_ALL)) continue;
@@ -1365,8 +1361,7 @@ void nasolver<nr_type_t>::saveResults (const std::string &volts, const std::stri
     // save operating points of non-linear circuits if requested
     if (saveOPs & SAVE_OPS)
     {
-        circuit * root = subnet->getRoot ();
-        for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+      for (circuit * c : subnet->root)
         {
             if (!c->isNonLinear ()) continue;
             if (!c->getSubcircuit ().empty() && !(saveOPs & SAVE_ALL)) continue;

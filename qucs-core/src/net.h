@@ -26,6 +26,7 @@
 #define __NET_H__
 
 #include <string>
+#include <list>
 #include "ptrlist.h"
 
 namespace qucs {
@@ -46,8 +47,8 @@ class net : public object
   net (const std::string &);
   net (net &);
   ~net ();
-  circuit * getRoot (void) { return root; }
-  void setRoot (circuit * c) { root = c; }
+  //circuit * getRoot (void) { return *(root.begin()); }
+  //void setRoot (circuit * c) { root = c; }
   void insertCircuit (circuit *);
   void removeCircuit (circuit *, int dropping = 1);
   int  containsCircuit (circuit *);
@@ -90,10 +91,10 @@ class net : public object
   nr_double_t getSrcFactor (void) { return srcFactor; }
   void setActionNetAll(net *);
 
+  std::list<circuit *> root;
  private:
   nodeset * nset;
-  circuit * drop;
-  circuit * root;
+  std::list<circuit *> drop;
   ptrlist<analysis> * actions;
   ptrlist<analysis> * orgacts;
   environment * env;

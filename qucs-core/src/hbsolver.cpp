@@ -296,8 +296,7 @@ int hbsolver::solve (void) {
 /* Goes through the list of circuit objects and runs its calcHB()
    function. */
 void hbsolver::calc (hbsolver * self) {
-  circuit * root = self->getNet()->getRoot ();
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (circuit * c : self->getNet()->root) {
     c->calcHB (self->frequency);
   }
 }
@@ -305,8 +304,7 @@ void hbsolver::calc (hbsolver * self) {
 /* Goes through the list of circuit objects and runs its initHB()
    function. */
 void hbsolver::initHB (void) {
-  circuit * root = subnet->getRoot ();
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (circuit * c : subnet->root) {
     c->initHB ();
   }
 }
@@ -314,10 +312,8 @@ void hbsolver::initHB (void) {
 /* Goes through the list of circuit objects and runs its initDC()
    function. */
 void hbsolver::initDC (void) {
-  circuit * root = subnet->getRoot ();
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+ for (circuit * c : subnet->root)
     c->initDC ();
-  }
 }
 
 // Returns true if circuit is a HB source.
@@ -434,8 +430,7 @@ void hbsolver::collectFrequencies (void) {
 
 // Split netlist into excitation, linear and non-linear part.
 void hbsolver::splitCircuits (void) {
-  circuit * root = subnet->getRoot ();
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (circuit * c : subnet->root) {
     if (c->isNonLinear ()) {
       // non-linear part
       nolcircuits.push_front(c);

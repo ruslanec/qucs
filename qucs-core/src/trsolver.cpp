@@ -406,8 +406,7 @@ void trsolver::initHistory (nr_double_t t)
     tHistory->self ();
     // initialize circuit histories
     nr_double_t age = 0.0;
-    circuit * root = subnet->getRoot ();
-    for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+    for (circuit * c : subnet->root)
     {
         if (c->hasHistory ())
         {
@@ -432,8 +431,7 @@ void trsolver::updateHistory (nr_double_t t)
         // update time vector
         tHistory->append (t);
         // update circuit histories
-        circuit * root = subnet->getRoot ();
-        for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+        for (circuit * c : subnet->root)
         {
             if (c->hasHistory ()) saveHistory (c);
         }
@@ -577,8 +575,7 @@ int trsolver::corrector (void)
 // The function advances one more time-step.
 void trsolver::nextStates (void)
 {
-    circuit * root = subnet->getRoot ();
-    for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+  for (circuit * c : subnet->root)
     {
         // for each circuit get the next state
         c->nextState ();
@@ -595,8 +592,7 @@ void trsolver::nextStates (void)
    transient solution. */
 void trsolver::fillStates (void)
 {
-    circuit * root = subnet->getRoot ();
-    for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+    for (circuit * c : subnet->root)
     {
         for (int s = 0; s < c->getStates (); s++)
             c->fillState (s, c->getState (s));
@@ -606,16 +602,14 @@ void trsolver::fillStates (void)
 // The function modifies the circuit lists integrator mode.
 void trsolver::setMode (int state)
 {
-    circuit * root = subnet->getRoot ();
-    for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+  for (circuit * c : subnet->root)
         c->setMode (state);
 }
 
 // The function passes the time delta array to the circuit list.
 void trsolver::setDelta (void)
 {
-    circuit * root = subnet->getRoot ();
-    for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+    for (circuit * c : subnet->root)
         c->setDelta (deltas);
 }
 
@@ -709,8 +703,7 @@ void trsolver::adjustOrder (int reduce)
         predType = predictorType (corrType, corrOrder, predOrder);
 
         // apply new corrector method and order to each circuit
-        circuit * root = subnet->getRoot ();
-        for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+        for (circuit * c : subnet->root)
         {
             c->setOrder (corrOrder);
             setIntegrationMethod (c, corrType);
@@ -722,8 +715,7 @@ void trsolver::adjustOrder (int reduce)
    function. */
 void trsolver::calcDC (trsolver * self)
 {
-    circuit * root = self->getNet()->getRoot ();
-    for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+    for (circuit * c : self->getNet()->root)
     {
         c->calcDC ();
     }
@@ -733,8 +725,7 @@ void trsolver::calcDC (trsolver * self)
    function. */
 void trsolver::calcTR (trsolver * self)
 {
-    circuit * root = self->getNet()->getRoot ();
-    for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+    for (circuit * c : self->getNet()->root)
     {
         c->calcTR (self->current);
     }
@@ -744,8 +735,7 @@ void trsolver::calcTR (trsolver * self)
    restartDC() function. */
 void trsolver::restart (void)
 {
-    circuit * root = subnet->getRoot ();
-    for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+    for (circuit * c : subnet->root)
     {
         if (c->isNonLinear ()) c->restartDC ();
     }
@@ -755,8 +745,7 @@ void trsolver::restart (void)
    function. */
 void trsolver::initDC (void)
 {
-    circuit * root = subnet->getRoot ();
-    for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+    for (circuit * c : subnet->root)
     {
         c->initDC ();
     }
@@ -818,11 +807,7 @@ void trsolver::initTR (void)
     }
 
     // tell circuits about the transient analysis
-    circuit *c, * root = subnet->getRoot ();
-    for (c = root; c != NULL; c = (circuit *) c->getNext ())
-        initCircuitTR (c);
-    // also initialize created circuits
-    for (c = root; c != NULL; c = (circuit *) c->getPrev ())
+    for (circuit * c : subnet->root)
         initCircuitTR (c);
 }
 

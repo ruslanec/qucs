@@ -26,6 +26,8 @@
 # include <config.h>
 #endif
 
+#include <algorithm>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,7 +57,6 @@ namespace qucs {
 
 // Constructor creates an unnamed instance of the net class.
 net::net () : object () {
-  root = drop = NULL;
   nPorts = nCircuits = nSources = 0;
   insertedNodes = inserted = reduced = 0;
   actions = new ptrlist<analysis> ();
@@ -67,7 +68,6 @@ net::net () : object () {
 
 // Constructor creates a named instance of the net class.
 net::net (const std::string &n) : object (n) {
-  root = drop = NULL;
   nPorts = nCircuits = nSources = 0;
   insertedNodes = inserted = reduced = 0;
   actions = new ptrlist<analysis> ();
@@ -81,8 +81,7 @@ net::net (const std::string &n) : object (n) {
 net::~net () {
   circuit * n;
   // delete each and every circuit
-  for (circuit * c = root; c != NULL; c = n) {
-    n = (circuit *) c->getNext ();
+  for (auto c: root) {
     delete c;
   }
   // delete original actions 
@@ -100,7 +99,6 @@ net::~net () {
 /* The copy constructor creates a new instance of the net class based
    on the given net object. */
 net::net (net & n) : object (n) {
-  root = drop = NULL;
   nPorts = nCircuits = nSources = 0;
   insertedNodes = inserted = reduced = 0;
   actions = n.actions ? new ptrlist<analysis> (*n.actions) : NULL;
@@ -108,6 +106,7 @@ net::net (net & n) : object (n) {
   env = n.env;
   nset = NULL;
   srcFactor = 1;
+  root = n.root;
 }
 
 /* This function prepends the given circuit to the list of registered
@@ -117,11 +116,7 @@ void net::insertCircuit (circuit * c) {
   assert (!containsCircuit (c));
 #endif
 
-  // chain circuit appropriately
-  if (root) root->setPrev (c);
-  c->setNext (root);
-  c->setPrev (NULL);
-  root = c;
+  root.push_front(c);
   nCircuits++;
   c->setEnabled (1);
   c->setNet (this);
@@ -145,16 +140,7 @@ void net::removeCircuit (circuit * c, int dropping) {
 #if 0
   assert (containsCircuit (c));
 #endif
-
-  // adjust the circuit chain appropriately
-  if (c == root) {
-    root = (circuit *) c->getNext ();
-    if (root) root->setPrev (NULL);
-  }
-  else {
-    if (c->getNext ()) c->getNext()->setPrev (c->getPrev ());
-    c->getPrev()->setNext (c->getNext ());
-  }
+  root.erase(std::remove(root.begin(), root.end(), c),root.end());
   nCircuits--;
   c->setEnabled (0);
   c->setNet (NULL);
@@ -164,10 +150,7 @@ void net::removeCircuit (circuit * c, int dropping) {
   // shift the circuit object to the drop list
   if (c->isOriginal ()) {
     if (dropping) {
-      if (drop) drop->setPrev (c);
-      c->setNext (drop);
-      c->setPrev (NULL);
-      drop = c;
+	drop.push_front(c);
     }
   }
   // really destroy the circuit object
@@ -177,9 +160,7 @@ void net::removeCircuit (circuit * c, int dropping) {
 /* The function returns non-zero if the given circuit is already part
    of the netlist. It returns zero if not. */
 int net::containsCircuit (circuit * cand) {
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
-    if (c == cand) return 1;
-  return 0;
+  return std::find(root.begin(),root.end(),cand) != root.end();
 }
 
 /* This function prepends the given analysis to the list of registered
@@ -396,21 +377,18 @@ ptrlist<analysis> * net::findLastOrderChildren (analysis * a) {
 /* The function re-shifts all circuits in the drop list to the actual
    list of circuit objects. */
 void net::getDroppedCircuits (nodelist * nodes) {
-  circuit * n;
-  for (circuit * c = drop; c != NULL; c = n) {
-    n = (circuit *) c->getNext ();
-    if (nodes) nodes->insert (c);
+  for (circuit * c : this->drop) {
+    if (nodes)
+      nodes->insert (c);
     insertCircuit (c);
   }
-  drop = NULL;
+  drop.clear();
 }
 
 /* This function deletes all unnecessary circuits in the list of
    registered circuit objects. */
 void net::deleteUnusedCircuits (nodelist * nodes) {
-  circuit * n;
-  for (circuit * c = root; c != NULL; c = n) {
-    n = (circuit *) c->getNext ();
+  for (auto c: root) {
     if (!c->isOriginal ()) {
       if (nodes) nodes->remove (c);
       removeCircuit (c);
@@ -427,7 +405,7 @@ node * net::findConnectedCircuitNode (node * n) {
   node * _node;
 
   // through the list of circuit objects
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (auto c: root) {
     // skip signal circuits
     if (c->getPort ()) continue;
     // through the list of nodes in a circuit
@@ -451,7 +429,7 @@ node * net::findConnectedNode (node * n) {
   const char * _name = n->getName ();
   node * _node;
 
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (auto c: root) {
     for (int i = 0; i < c->getSize (); i++) {
       _node = c->getNode (i);
       if (!strcmp (_node->getName (), _name)) {
@@ -491,30 +469,16 @@ void net::insertedNode (node * c) {
 /* This helper function checks whether the circuit chain of the
    netlist is properly working.  It returns the number of errors or
    zero if there are no errors. */
+// TODO: delete
 int net::checkCircuitChain (void) {
-  int error = 0;
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
-    if (c->getPrev ())
-      if (c->getPrev()->getNext () != c) {
-	error++;
-	logprint (LOG_ERROR, "ERROR: prev->next != circuit '%s'\n",
-		  c->getName ());
-      }
-    if (c->getNext ())
-      if (c->getNext()->getPrev () != c) {
-	error++;
-	logprint (LOG_ERROR, "ERROR: next->prev != circuit '%s'\n",
-		  c->getName ());
-      }
-  }
-  return error;
+  return 0;
 }
 
 /* This function counts the number of signals (ports) within the list
    of registerd circuits. */
 int net::countPorts (void) {
   int count = 0;
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (auto c: root) {
     if (c->getPort ()) count++;
   }
   return count;
@@ -524,7 +488,7 @@ int net::countPorts (void) {
    registered circuits. */
 int net::countNodes (void) {
   int count = 0;
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (auto c: root) {
     if (!c->getPort ()) count += c->getSize ();
   }
   return count;
@@ -534,7 +498,7 @@ int net::countNodes (void) {
    list of registered circuits. */
 int net::isNonLinear (void) {
   int count = 0;
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (auto c: root) {
     if (c->isNonLinear ()) count++;
   }
   return count;
@@ -573,7 +537,7 @@ void net::list (void) {
 	    "%d ports, %d nodes)\n", getName (), countPorts (),
 	    countPorts (), countNodes ());
   // go through circuit list
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (auto c: root) {
     // list each circuit
     logprint (LOG_STATUS, "       %s[", c->getName ());
     for (int i = 0; i < c->getSize (); i++) {

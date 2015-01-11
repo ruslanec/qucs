@@ -160,9 +160,7 @@ e_trsolver::e_trsolver (e_trsolver & o)
 
 void e_trsolver::debug()
 {
-    circuit * root = subnet->getRoot ();
-
-    for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+  for (circuit * c : subnet->root)
     {
         messagefcn (0, c->getName() );
 
@@ -271,8 +269,7 @@ int e_trsolver::init (nr_double_t start, nr_double_t firstdelta, int mode)
    to be less than these initial requested values) */
 void e_trsolver::storeHistoryAges (void)
 {
-    circuit * root = subnet->getRoot ();
-    for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+  for (circuit * c : subnet->root)
     {
         // get the a
         if (c->hasHistory ())
@@ -358,12 +355,7 @@ void e_trsolver::initETR (nr_double_t start, nr_double_t firstdelta, int mode)
     saveState (dState, lastdeltas);
     lastdelta = delta;
 
-    // tell circuit elements about the transient analysis
-    circuit *c, * root = subnet->getRoot ();
-    for (c = root; c != NULL; c = (circuit *) c->getNext ())
-        initCircuitTR (c);
-    // also initialize the created circuit elements
-    for (c = root; c != NULL; c = (circuit *) c->getPrev ())
+    for (auto *c: subnet->root)
         initCircuitTR (c);
 }
 
@@ -840,8 +832,7 @@ void e_trsolver::copySolution (tvector<nr_double_t> * src[8], tvector<nr_double_
 void e_trsolver::updateHistoryAges (nr_double_t newage)
 {
     int i = 0;
-    circuit * root = subnet->getRoot ();
-    for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+    for (circuit * c : subnet->root)
     {
         // set the history length to retain to be at least
         // the length of the supplied age
@@ -908,8 +899,7 @@ int e_trsolver::getVProbeV (char * probename, nr_double_t& probeV)
     // check for NULL name
     if (probename)
     {
-        circuit * root = subnet->getRoot ();
-        for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+      for (circuit * c : subnet->root)
         {
             if (c->getType () == CIR_VPROBE) {
 
@@ -954,8 +944,7 @@ int e_trsolver::getIProbeI (char * probename, nr_double_t& probeI)
     // check for NULL name
     if (probename)
     {
-        circuit * root = subnet->getRoot ();
-        for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+      for (auto c: subnet->root)
         {
             if (c->getType () == CIR_IPROBE) {
 
@@ -995,8 +984,7 @@ int e_trsolver::setECVSVoltage(char * ecvsname, nr_double_t V)
     // check for NULL name
     if (ecvsname)
     {
-        circuit * root = subnet->getRoot ();
-        for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+      for (circuit * c : subnet->root)
         {
             // examine only ECVS elements
             if (c->getType () == CIR_ECVS) {
@@ -1030,8 +1018,7 @@ int e_trsolver::setECVSVoltage(char * ecvsname, nr_double_t V)
 
 void e_trsolver::updateExternalInterpTime(nr_double_t t)
 {
-    circuit * root = subnet->getRoot ();
-    for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+  for (circuit * c : subnet->root)
     {
         // examine only external elements that have interpolation,
         // such as ECVS elements
@@ -1051,8 +1038,7 @@ void e_trsolver::updateExternalInterpTime(nr_double_t t)
 void e_trsolver::truncateHistory (nr_double_t t)
 {
     // truncate all the circuit element histories
-    circuit * root = subnet->getRoot ();
-    for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ())
+  for (circuit * c : subnet->root)
     {
         if (c->hasHistory ()) c->truncateHistory (t);
     }

@@ -37,6 +37,9 @@
 #include "net.h"
 #include "nodelist.h"
 
+#include <unistd.h>
+#include <stdio.h>
+
 namespace qucs {
 
 
@@ -51,7 +54,7 @@ nodelist::nodelist (net * subnet) {
 
   circuit * c;
   // go through circuit list and find unique nodes
-  for (c = subnet->getRoot (); c != NULL; c = (circuit *) c->getNext ()) {
+  for (auto * c : subnet->root) {
     for (int i = 0; i < c->getSize (); i++) {
       node * n = c->getNode (i);
       if (contains (n->getName ()) == 0) {
@@ -61,7 +64,7 @@ nodelist::nodelist (net * subnet) {
   }
   // add circuit nodes to each unique node in the list
   for (auto &n : this->root) {
-    for (c = subnet->getRoot (); c != NULL; c = (circuit *) c->getNext ()) {
+    for (auto * c : subnet->root) {
       for (int i = 0; i < c->getSize (); i++) {
 	assert (c->getNode(i)->getName () != NULL);
 	if (n->name == c->getNode(i)->getName ()) {
@@ -325,6 +328,12 @@ void nodelist::sort (void) {
 
 // The function returns the first two nodes of the sorted list.
 void nodelist::sortedNodes (node ** node1, node ** node2) {
+  logprint (LOG_STATUS, "DEBUG:=====================================\n");
+  this->print();
+  fflush(stdout);
+  fflush(stderr);
+  fsync(1);
+  fsync(2);
   assert ((*root.begin())->size() == 2);
   *node1 = (**(root.begin()))[0];
   *node2 = (**(root.begin()))[1];

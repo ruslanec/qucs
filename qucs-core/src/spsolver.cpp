@@ -447,8 +447,7 @@ void spsolver::noiseConnect (circuit * result, node * n1, node * n2) {
 /* Goes through the list of circuit objects and runs its frequency
    dependent calcSP() function. */
 void spsolver::calc (nr_double_t freq) {
-  circuit * root = subnet->getRoot ();
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (circuit * c : subnet->root) {
     c->calcSP (freq);
     if (noise) c->calcNoiseSP (freq);
   }
@@ -470,7 +469,6 @@ void spsolver::reduce (void) {
   node * n1, * n2, * cand;
   circuit * result, * c1, * c2, * cand1, * cand2;
   int ports;
-  circuit * root = subnet->getRoot ();
 
   // initialize local variables
   result = c1 = c2 = cand1 = cand2 = NULL;
@@ -478,7 +476,7 @@ void spsolver::reduce (void) {
   ports = 10000; // huge
 
   // go through the circuit list
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (circuit * c : subnet->root) {
 
     // skip signal ports
     if (c->getPort ()) continue;
@@ -514,7 +512,7 @@ void spsolver::reduce (void) {
   if (cand1 != NULL && cand2 != NULL) {
     // connected
     if (cand1 != cand2) {
-#if DEBUG && 0
+#if DEBUG
       logprint (LOG_STATUS, "DEBUG: connected node (%s): %s - %s\n",
 		n1->getName (), cand1->getName (), cand2->getName ());
 #endif /* DEBUG */
@@ -533,7 +531,7 @@ void spsolver::reduce (void) {
     }
     // interconnect
     else {
-#if DEBUG && 0
+#if DEBUG
       logprint (LOG_STATUS, "DEBUG: interconnected node (%s): %s\n",
 		n1->getName (), cand1->getName ());
 #endif
@@ -554,8 +552,7 @@ void spsolver::reduce (void) {
 /* Goes through the list of circuit objects and runs initializing
    functions if necessary. */
 void spsolver::init (void) {
-  circuit * root = subnet->getRoot ();
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (circuit * c : subnet->root) {
     if (c->isNonLinear ()) c->calcOperatingPoints ();
     c->initSP ();
     if (noise) c->initNoiseSP ();
@@ -637,7 +634,6 @@ void spsolver::insertConnectors (node * n) {
   int count = 0;
   node * nodes[4], * _node;
   const char * _name = n->getName ();
-  circuit * root = subnet->getRoot ();
 
 #if USE_GROUNDS
   if (!strcmp (_name, "gnd")) return;
@@ -646,7 +642,7 @@ void spsolver::insertConnectors (node * n) {
   nodes[0] = n;
 
   // go through list of circuit objects
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (circuit * c : subnet->root) {
     // and each node in a circuit
     for (int i = 0; i < c->getSize (); i++) {
       _node = c->getNode (i);
@@ -818,8 +814,6 @@ void spsolver::dropGround (circuit * c) {
    the circuit list.  With this adjustments the solver is able to
    solve the circuit. */
 void spsolver::insertConnections (void) {
-
-  circuit * root, * c;
 #if DEBUG
   logprint (LOG_STATUS, "NOTIFY: %s: preparing circuit for analysis\n",
 	    getName ());
@@ -827,8 +821,7 @@ void spsolver::insertConnections (void) {
 
 #if USE_GROUNDS
   // remove original ground circuit from netlist
-  root = subnet->getRoot ();
-  for (c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (auto * c : subnet->root) {
     if (c->getType () == CIR_GROUND) {
       gnd = c;
       subnet->removeCircuit (c, 0);
@@ -839,8 +832,7 @@ void spsolver::insertConnections (void) {
 
   // insert opens, tee and crosses where necessary
   tees = crosses = opens = grounds = 0;
-  root = subnet->getRoot ();
-  for (c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (auto c : subnet->root) {
     for (int i = 0; i < c->getSize (); i++) {
       insertConnectors (c->getNode (i));
       insertOpen (c->getNode (i));
@@ -852,8 +844,7 @@ void spsolver::insertConnections (void) {
 
 #if USE_GROUNDS
   // insert grounds where necessary
-  root = subnet->getRoot ();
-  for (c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (auto * c: subnet->root) {
     for (int i = 0; i < c->getSize (); i++) {
       insertGround (c->getNode (i));
     }
@@ -871,7 +862,7 @@ void spsolver::insertConnections (void) {
    all additional circuits from the netlist which were necessary to
    run the analysis algorithm. */
 void spsolver::dropConnections (void) {
-  circuit * next, * cand;
+  circuit * cand;
   int inserted;
 
   // drop all additional inserted circuits in correct order
@@ -879,8 +870,7 @@ void spsolver::dropConnections (void) {
     // find last inserted circuit
     inserted = -1;
     cand = NULL;
-    for (circuit * c = subnet->getRoot (); c != NULL; c = next) {
-      next = (circuit *) c->getNext ();
+    for (circuit * c : subnet->root) {
       if (c->getInserted () > inserted) {
 	inserted = c->getInserted ();
 	cand = c;
@@ -917,8 +907,7 @@ void spsolver::dropConnections (void) {
 /* This function inserts an ideal transformer before an AC power
    source in order to allow differential S parameter ports.  */
 void spsolver::insertDifferentialPorts (void) {
-  circuit * root = subnet->getRoot ();
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (circuit * c : subnet->root) {
     if (c->getPort ()) {
 
       // create an ideal transformer and assign its node names
@@ -973,7 +962,6 @@ void spsolver::saveResults (nr_double_t freq) {
   node * sig_i, * sig_j;
   char * n;
   int res_i, res_j;
-  circuit * root = subnet->getRoot ();
 
   // temporary noise matrices and input port impedance
   nr_complex_t noise_c[4], noise_s[4];
@@ -987,7 +975,7 @@ void spsolver::saveResults (nr_double_t freq) {
   if (runs == 1) f->add (freq);
 
   // go through the list of remaining circuits
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (circuit * c : subnet->root) {
     // skip signals
     if (!c->getPort ()) {
       // handle each s-parameter
@@ -1086,10 +1074,9 @@ const char * spsolver::createCV (const std::string &c, const std::string &n) {
    saveCharacteristics() function.  Then puts these values into the
    dataset. */
 void spsolver::saveCharacteristics (nr_double_t freq) {
-  circuit * root = subnet->getRoot ();
   const char * n;
   vector * f = data->findDependency ("frequency");
-  for (circuit * c = root; c != NULL; c = (circuit *) c->getNext ()) {
+  for (circuit * c : subnet->root) {
     c->saveCharacteristics (freq);
     if (!c->getSubcircuit ().empty() && !(saveCVs & SAVE_ALL)) continue;
     c->calcCharacteristics (freq);
