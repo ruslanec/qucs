@@ -2,21 +2,19 @@ language: cpp
 
 os:
   - linux
-  - osx
 
 compiler:
   - gcc
-  - clang
 
 python:
   - "2.7"
 virtualenv:
   system_site_packages: true
 
-matrix:
-  exclude:
-    - os: osx
-      compiler: gcc
+#matrix:
+#  exclude:
+#    - os: osx
+#      compiler: gcc
 
 before_install:
 
@@ -159,5 +157,5 @@ script:
 after_success:
   # Send coverage data to Coveralls
   - if [[ $GCC ]]; then
-      coveralls --exclude examples --exclude qucs --exclude qucs-doc --exclude adms-2.3.4 --gcov-options '\-lp' --gcov gcov-4.8;
+      coveralls --exclude qucs-core/src/components/verilog --exclude examples --exclude qucs --exclude qucs-doc --exclude adms-2.3.4 --gcov-options '\-lp' --gcov gcov-4.8;
     fi
