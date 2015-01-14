@@ -40,6 +40,9 @@ env:
 
 
 before_install:
+  - echo $GIT_NAME;
+  - echo $GIT_EMAIL;
+  - echo $GH_TOKEN;
 
   # Set variables for readability.
   - if [[ $TRAVIS_OS_NAME == linux ]]; then LINUX=true; fi
@@ -211,13 +214,14 @@ after_success:
   # Clone repo, put the html pages on its gh_pages branch
   # Credentials taken from the secure environment variables GIT_NAME, GIT_EMAIL and GH_TOKEN
   - if [[ $LINUX && $CLANG ]]; then
+
       git config --global user.name ${GIT_NAME} ;
       git config --global user.email ${GIT_EMAIL} ;
       git clone https://github.com/Qucs/qucs-doxygen.git qucs-doxygen ;
       cd qucs-doxygen ;
       git checkout gh-pages ;
-      mv qucs/contrib/doxygen/html/ qucs/ ;
-      mv qucs-doc/doxygen/html/ qucs-core/ ;
+      mv ../qucs/contrib/doxygen/html/ qucs/ ;
+      mv ../qucs-doc/doxygen/html/ qucs-core/ ;
       git add --all . ;
       git commit -m "Auto-updating Doxygen developer documentation" ;
       git push https://${GH_TOKEN}@github.com/Qucs/qucs-doxygen gh-pages ;
