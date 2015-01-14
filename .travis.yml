@@ -82,7 +82,7 @@ install:
 
   # Set up for Doxygen
   - if [[ $LINUX && $CLANG ]]; then
-      sudo apt-get install -qq doxygen latex dot ;
+      sudo apt-get install -qq doxygen texlive graphviz ;
     fi
 
   # Qucs-Test uses Numpy to compare results
