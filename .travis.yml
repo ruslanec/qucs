@@ -36,13 +36,10 @@ matrix:
 # Set secure environment with encrypted string containing GIT_NAME, GIT_EMAIL and GH_TOKEN
 env:
   global:
-    - secure: "B0OMVeuzPULW6CH0qAiecTXDrwIzIX6WYlQPpVNrGg2ACcbytr/i1bjVffynxU06fHBt0N4V1q8luFYlMImi8ALyjs1PSCx/y8q+Ej2H67xI9VSY+9qHROCoSSfFMzSk9EhFhvY1qt3uAQkxBznXQwkH9fYy1QqWcCp26YfCKCM="
-
+    - secure: "HfplEtCmFfgmKIKWfwe/Pw+BZcciFiIfw5gP/nF7IRVDSIjxOzwBHC+E/TyayR1iRmp3dHs6/fOrLFFNWJZzzH/qdmxGybrvECkgp5oF2ho6paAa3zcdTXan6r0+ye4JV20n6pqBtOM5IS3eQv1eFc81lTa80hzBiPQfEp3tW9w="
 
 before_install:
   - echo $GIT_NAME;
-  - echo $GIT_EMAIL;
-  - echo $GH_TOKEN;
 
   # Set variables for readability.
   - if [[ $TRAVIS_OS_NAME == linux ]]; then LINUX=true; fi
